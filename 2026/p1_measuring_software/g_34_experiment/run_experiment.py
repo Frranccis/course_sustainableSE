@@ -4,9 +4,10 @@ import argparse
 import random
 from playwright.async_api import async_playwright
 
-VIDEO_URL = "https://www.youtube.com/watch?v=cdKop6aixVE"  # up to 4k, no ads
-EXPERIMENT_DURATION = 10 # how long the video should play in the experiment (in seconds) # TODO - set a real duration
-QUALITIES = [480, 2160]
+VIDEO_URL = "https://www.youtube.com/watch?v=d4u4cgxTShU"  # up to 4k, no ads
+EXPERIMENT_DURATION = 5  # how long the video should play in the experiment (in seconds) # 30s normally
+
+SETTINGS = [0, 1, 2]  # 0 -> No settings (all off), 1 -> Ambient Mode, 2 -> Stable Volume, 3 -> Vo
 
 
 """
@@ -18,23 +19,23 @@ python run_experiment.py --qualities 480 2160
 
 async def run_all_iterations():
     # represent each iteration with a list entry
-    quality_list = []
-    for q in QUALITIES:
-        quality_list.extend([q] * 2) # this is only 2 for testing, should be 30
-    print("qualities are" + str(quality_list))
+    settings_list = []
+    for s in SETTINGS:
+        settings_list.extend([s] * 2)  # this is only 2 for testing, should be 30
+    print("qualities are" + str(settings_list))
 
     # randomly choose between the two cases
-    random.shuffle(quality_list)
+    random.shuffle(settings_list)
 
-    for i, quality in enumerate(quality_list, start=1):
-        output_file = f"./results/q{quality}/run_{i:02d}.csv"
-        print(f"\n=== Run {i} | Quality {quality}p ===")
-        await run_experiment(quality, output_file)
+    for i, setting in enumerate(settings_list, start=1):
+        output_file = f"./results/q{setting}/run_{i:02d}.csv"
+        print(f"\n=== Run {i} | Quality {setting}p ===")
+        await run_experiment(setting, output_file)
         print(f"\n=== Finished, sleeping in between")
-        await asyncio.sleep(10000)
+        await asyncio.sleep(10)  # sleep 10s
 
 
-async def run_experiment(quality, output_file):
+async def run_experiment(setting, output_file):
     playwright = await async_playwright().start()
 
     browser = await playwright.chromium.launch(
@@ -80,13 +81,15 @@ async def run_experiment(quality, output_file):
     await page.wait_for_timeout(500)
     await page.locator('button.ytp-settings-button').click()
     await page.wait_for_timeout(1000)
-    await page.click('div.ytp-menuitem-label:has-text("Quality")')
-    await page.wait_for_timeout(1000)
 
-    await page.click(f'div.ytp-menuitem-label:has-text("{quality}")')
-    await page.wait_for_timeout(1000)
+    # await page.click('div.ytp-menuitem-label:has-text("Quality")')
+    # await page.wait_for_timeout(1000)
+    #
+    # await page.click(f'div.ytp-menuitem-label:has-text("{quality}")')
+    # await page.wait_for_timeout(1000)
+    # todo according to the setting variable, choose different menu items
 
-    print(f"Quality set to {quality}p")
+    print(f"Setting set to {setting}p")
 
     # enter fullscreen
     await page.keyboard.press('f')
